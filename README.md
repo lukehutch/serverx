@@ -313,7 +313,8 @@ public class SiteSettingsHandler implements RouteHandler<SiteSettingsModel> {
                 result -> {
                     if (result.succeeded()) {
                         JsonObject settings = result.result().get(0);
-                        response.complete(settings.mapTo(SiteSettingsModel.class));
+                        SiteSettings siteSettings = settings.mapTo(SiteSettingsModel.class);
+                        response.complete(siteSettings);
                     } else {
                         response.fail(result.cause());
                     }
