@@ -196,7 +196,8 @@ The default page template includes [UIKit](https://getuikit.com/), [SennaJS](htt
 ### Custom handlers
 
 You can register a standard Vert.x `Handler<RoutingContext>` rather than a `RouteHandler<T>` if you want to handle
-a route yourself, e.g. if you want to use your own HTML template engine to render content:
+a route yourself (e.g. if you want to use your own HTML template engine to render content, send a custom
+status code, or respond with a custom MIME type):
 
 ```java
 @Route(path = "/price.html", requireLogin = false)
