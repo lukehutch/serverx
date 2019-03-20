@@ -300,6 +300,37 @@ class. If a value is specified in `server.properties`, it overrides the default 
 If a field in `ServerProperties` has a `null` value, the value has no default, and is required (the server won't
 start unless the property is set).
 
+A typical `server.properties` file will look like the following:
+
+```
+# Host, port, and SSL parameters. If useSSL=true (the default),
+# httpPort will automatically redirect requests to httpsPort 
+host=mydomain.com
+httpPort=8080
+httpsPort=8443
+#useSSL=true
+
+# SSL certificate paths
+pemCertFilePath=/etc/letsencrypt/live/mydomain.com/fullchain.pem
+pemKeyFilePath=/etc/letsencrypt/live/mydomain.com/privkey.pem
+
+# Packages to scan for route handlers and TemplateModels
+handlerPackage=com.mydomain.routehandler
+templateModelPackage=com.mydomain.templatemodel
+
+# The MongoDB database name
+dbName=stuffnow
+
+# The file containing clientId and clientSecret properties for Google OAuth2
+googleSecretProperties=/home/user/mydomain-config/google_secret.properties
+
+# Whether or not to indent (prettyprint) HTML and/or JSON in the response.
+# HTML template rendering and JSON serialization is faster (and the response
+# is smaller) if not indented.
+indentHTML=false
+indentJSON=true
+```
+
 ## Starting the server
 
 ```java

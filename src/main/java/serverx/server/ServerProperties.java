@@ -89,10 +89,15 @@ public class ServerProperties {
     /** The uploads directory, used when {@link Route#requestBodySizeLimit()} > 0. */
     public String uploadsDir = "uploads";
 
-    /** If true, pretty print (indent) HTML. */
+    /**
+     * If true, pretty print (indent) HTML. HTML template rendering is faster (and response is smaller) if HTML is
+     * not indented.
+     */
     public boolean indentHTML = false;
 
-    /** If true, pretty print (indent) JSON. */
+    /**
+     * If true, pretty print (indent) JSON. JSON serialization is faster (and response is smaller) if not indented.
+     */
     public boolean indentJSON = false;
 
     /**
