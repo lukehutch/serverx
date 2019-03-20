@@ -354,7 +354,7 @@ handlerPackage=com.mydomain.routehandler
 templateModelPackage=com.mydomain.templatemodel
 
 # The MongoDB database name
-dbName=mydomaindb
+dbName=mydb
 
 # The file containing clientId and clientSecret properties for Google OAuth2
 googleSecretProperties=/home/user/mydomain-config/google_secret.properties
