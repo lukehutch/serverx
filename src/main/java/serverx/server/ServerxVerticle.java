@@ -67,9 +67,11 @@ public class ServerxVerticle extends AbstractVerticle {
     /** Read the server properties file. */
     private void readServerProperties() {
         final Properties prop = new Properties();
-        try (var inputStream = getClass().getClassLoader().getResourceAsStream(ServerProperties.PROPERTIES_FILENAME)) {
+        try (var inputStream = getClass().getClassLoader()
+                .getResourceAsStream(ServerProperties.PROPERTIES_FILENAME)) {
             if (inputStream == null) {
-                throw new RuntimeException("Could not find " + ServerProperties.PROPERTIES_FILENAME + " resource file");
+                throw new RuntimeException(
+                        "Could not find " + ServerProperties.PROPERTIES_FILENAME + " resource file");
             }
             prop.load(inputStream);
         } catch (final IOException e) {

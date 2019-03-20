@@ -79,7 +79,8 @@ public class HTMLTemplate {
     public void addTemplateForPath(final String templatePath, final String templateStr,
             final Map<Class<? extends TemplateModel>, HTMLTemplate> templateModelClassToHTMLTemplate) {
         final List<TemplatePart> templateParts = HTMLTemplateLoader.parseTemplate(templateStr,
-                fieldNameToMethodHandle, ServerxVerticle.serverProperties.indentHTML, templateModelClassToHTMLTemplate);
+                fieldNameToMethodHandle, ServerxVerticle.serverProperties.indentHTML,
+                templateModelClassToHTMLTemplate);
         if (templatePath.isEmpty()) {
             defaultTemplateParts = templateParts;
         } else {

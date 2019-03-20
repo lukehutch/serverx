@@ -291,9 +291,9 @@ public class RouteInfo implements Comparable<RouteInfo> {
                         break;
                     case JSON:
                         // Encode the result object as JSON, then send as response
-                        socket.write(
-                                ServerxVerticle.serverProperties.indentJSON ? Json.encodePrettily(asyncResult.result())
-                                        : Json.encode(asyncResult.result()));
+                        socket.write(ServerxVerticle.serverProperties.indentJSON
+                                ? Json.encodePrettily(asyncResult.result())
+                                : Json.encode(asyncResult.result()));
                         break;
                     case STRING:
                         // Call toString() on the result object, then send as plaintext
@@ -304,7 +304,8 @@ public class RouteInfo implements Comparable<RouteInfo> {
                                 "Unknown response type " + routeAnnotation.responseType());
                     }
                 } else {
-                    ServerxVerticle.logger.log(Level.SEVERE, "Uncaught exception in socket handler", asyncResult.cause());
+                    ServerxVerticle.logger.log(Level.SEVERE, "Uncaught exception in socket handler",
+                            asyncResult.cause());
                     socket.end();
                 }
             });
@@ -496,8 +497,9 @@ public class RouteInfo implements Comparable<RouteInfo> {
      */
     private static List<RouteInfo> getRouteInfo(final Vertx vertx) {
         // Find all TemplateModel implementations
-        ServerxVerticle.logger.log(Level.INFO, "Scanning package " + ServerxVerticle.serverProperties.templateModelPackage
-                + " for " + TemplateModel.class.getSimpleName() + " implementations");
+        ServerxVerticle.logger.log(Level.INFO,
+                "Scanning package " + ServerxVerticle.serverProperties.templateModelPackage + " for "
+                        + TemplateModel.class.getSimpleName() + " implementations");
         final var templateModelClassToHTMLTemplate = new HashMap<Class<? extends TemplateModel>, HTMLTemplate>();
         HTMLTemplate htmlPageModeTemplate = null;
         try (var scanResult = new ClassGraph().enableAllInfo()
@@ -539,8 +541,8 @@ public class RouteInfo implements Comparable<RouteInfo> {
                 "Scanning package " + ServerxVerticle.serverProperties.handlerPackage + " for handlers");
         final var routeHandlerOrder = new ArrayList<RouteInfo>();
         try (var scanResult = new ClassGraph().enableAllInfo()
-                .whitelistPackages(ServerxVerticle.serverProperties.handlerPackage).whitelistClasses(Route.class.getName())
-                .scan()) {
+                .whitelistPackages(ServerxVerticle.serverProperties.handlerPackage)
+                .whitelistClasses(Route.class.getName()).scan()) {
             for (final ClassInfo classWithRouteAnnotation : scanResult
                     .getClassesWithAnnotation(Route.class.getName())) {
                 final var routeAnnotationInfo = classWithRouteAnnotation.getAnnotationInfo(Route.class.getName());
@@ -898,8 +900,8 @@ public class RouteInfo implements Comparable<RouteInfo> {
                 final var uploadsDirFile = new File(ServerxVerticle.serverProperties.uploadsDir);
                 uploadsDirFile.mkdirs();
                 if (!uploadsDirFile.canWrite() || !uploadsDirFile.canRead()) {
-                    throw new RuntimeException(
-                            "Uploads dir \"" + ServerxVerticle.serverProperties.uploadsDir + "\" is not accessible");
+                    throw new RuntimeException("Uploads dir \"" + ServerxVerticle.serverProperties.uploadsDir
+                            + "\" is not accessible");
                 }
                 bodyHandler.setUploadsDirectory(ServerxVerticle.serverProperties.uploadsDir);
                 vertxRoute.handler(bodyHandler);
