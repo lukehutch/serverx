@@ -10,9 +10,9 @@ Serverx adopts a *secure by default* mindset:
 
 * [all reasonable security headers](https://vertx.io/blog/writing-secure-vert-x-web-apps#security-headers) are enabled by default
 * the built-in template engine follows all OWASP guidelines for escaping parameters
-* XSS and protection measures are put in place by default
-* CSRF protection is enabled by default, and the built-in template engine automatically inserts CSRF tokens into HTML forms
-* SSL is enabled by default, and HTTP requests automatically redirect to HTTPS requests with the same path
+* XSS protection measures are put in place automatically
+* CSRF protection is put in place automatically (the built-in template engine automatically inserts CSRF tokens into HTML forms, and the server will check the token on non-`GET` requests)
+* SSL (and HTTP/2 + ALPN) is enabled by default, and `http://` requests automatically redirect to `https://` requests with the same path
 * routes require a user to be authenticated by default
 * cookies are HTTPS-only and disallowed for Javascript requests
 * etc.
