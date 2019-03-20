@@ -1,10 +1,5 @@
 package serverx.server;
 
-import java.io.IOException;
-import java.lang.reflect.Modifier;
-import java.util.Properties;
-import java.util.logging.Level;
-
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import serverx.route.Route;
@@ -115,58 +110,5 @@ public class ServerProperties {
     // -------------------------------------------------------------------------------------------------------------
 
     /** The filename to read properties from. */
-    private static final String PROPERTIES_FILENAME = "server.properties";
-
-    // -------------------------------------------------------------------------------------------------------------
-
-    /** Constructor. */
-    ServerProperties() {
-        final Properties prop = new Properties();
-        try (var inputStream = getClass().getClassLoader().getResourceAsStream(PROPERTIES_FILENAME)) {
-            if (inputStream == null) {
-                throw new RuntimeException("Could not find " + PROPERTIES_FILENAME + " resource file");
-            }
-            prop.load(inputStream);
-        } catch (final IOException e) {
-            throw new RuntimeException("Could not read " + PROPERTIES_FILENAME + " resource file");
-        }
-
-        for (final var field : getClass().getDeclaredFields()) {
-            try {
-                if ((field.getModifiers() & (Modifier.STATIC | Modifier.FINAL)) == 0) {
-                    final var propVal = prop.getProperty(field.getName());
-                    if (propVal != null) {
-                        try {
-                            if (field.getType() == String.class) {
-                                field.set(this, propVal);
-                            } else if (field.getType() == Integer.class) {
-                                field.set(this, Integer.valueOf(propVal));
-                            } else if (field.getType() == int.class) {
-                                field.setInt(this, Integer.parseInt(propVal));
-                            } else if (field.getType() == Boolean.class) {
-                                field.set(this, Boolean.valueOf(propVal));
-                            } else if (field.getType() == boolean.class) {
-                                field.setBoolean(this, Boolean.parseBoolean(propVal));
-                            } else {
-                                throw new RuntimeException(
-                                        "Field " + field.getName() + " has illegal type " + field.getType());
-                            }
-                        } catch (final NumberFormatException e) {
-                            throw new RuntimeException(
-                                    "Property " + field.getName() + " has non-numerical value " + propVal);
-                        }
-                    }
-                    final var fieldVal = field.get(this);
-                    if (fieldVal == null) {
-                        throw new RuntimeException("Required property " + field.getName() + " is missing from file "
-                                + PROPERTIES_FILENAME);
-                    }
-                    ServerxVerticle.logger.log(Level.INFO, "serverProperties." + field.getName() + ": " + fieldVal);
-                }
-            } catch (final IllegalAccessException e) {
-                // Should not happen
-                throw new RuntimeException("Field " + field.getName() + " could not be accessed");
-            }
-        }
-    }
+    static final String PROPERTIES_FILENAME = "server.properties";
 }

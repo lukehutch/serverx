@@ -3,6 +3,7 @@ package serverx.server;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
@@ -56,9 +57,63 @@ public class ServerxVerticle extends AbstractVerticle {
 
     /** Configuration. */
     public static final ServerProperties serverProperties = new ServerProperties();
+    {
+        readServerProperties();
+    }
 
     /** The MongoDB client. */
     public static MongoClient mongoClient;
+
+    /** Read the server properties file. */
+    private void readServerProperties() {
+        final Properties prop = new Properties();
+        try (var inputStream = getClass().getClassLoader().getResourceAsStream(ServerProperties.PROPERTIES_FILENAME)) {
+            if (inputStream == null) {
+                throw new RuntimeException("Could not find " + ServerProperties.PROPERTIES_FILENAME + " resource file");
+            }
+            prop.load(inputStream);
+        } catch (final IOException e) {
+            throw new RuntimeException("Could not read " + ServerProperties.PROPERTIES_FILENAME + " resource file");
+        }
+
+        for (final var field : ServerProperties.class.getDeclaredFields()) {
+            try {
+                if ((field.getModifiers() & (Modifier.STATIC | Modifier.FINAL)) == 0) {
+                    final var propVal = prop.getProperty(field.getName());
+                    if (propVal != null) {
+                        try {
+                            if (field.getType() == String.class) {
+                                field.set(serverProperties, propVal);
+                            } else if (field.getType() == Integer.class) {
+                                field.set(serverProperties, Integer.valueOf(propVal));
+                            } else if (field.getType() == int.class) {
+                                field.setInt(serverProperties, Integer.parseInt(propVal));
+                            } else if (field.getType() == Boolean.class) {
+                                field.set(serverProperties, Boolean.valueOf(propVal));
+                            } else if (field.getType() == boolean.class) {
+                                field.setBoolean(serverProperties, Boolean.parseBoolean(propVal));
+                            } else {
+                                throw new RuntimeException(
+                                        "Field " + field.getName() + " has illegal type " + field.getType());
+                            }
+                        } catch (final NumberFormatException e) {
+                            throw new RuntimeException(
+                                    "Property " + field.getName() + " has non-numerical value " + propVal);
+                        }
+                    }
+                    final var fieldVal = field.get(serverProperties);
+                    if (fieldVal == null) {
+                        throw new RuntimeException("Required property " + field.getName() + " is missing from file "
+                                + ServerProperties.PROPERTIES_FILENAME);
+                    }
+                    ServerxVerticle.logger.log(Level.INFO, "serverProperties." + field.getName() + ": " + fieldVal);
+                }
+            } catch (final IllegalAccessException e) {
+                // Should not happen
+                throw new RuntimeException("Field " + field.getName() + " could not be accessed");
+            }
+        }
+    }
 
     /**
      * Die.
