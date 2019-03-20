@@ -245,7 +245,7 @@ public class SecretPage implements RouteHandler<SecretPageModel> {
 ```
 
 In addition to `ctx.user()` being available for logged-in users on authenticated routes (in particular providing
-`ctx.user().principal()` for further OAuth2-authenticated remote API calls), the user's email address
+`ctx.user().principal()` for making OAuth2-authenticated remote API calls), the user's email address
 is available as `(String) ctx.session().get("email")`, and the OpenID Connect user info (the user's name,
 profile picture URL, etc.) is available as `(JsonObject) ctx.session().get("user_info")`.
 
