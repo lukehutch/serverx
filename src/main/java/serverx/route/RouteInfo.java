@@ -1,7 +1,11 @@
+/*
+ * 
+ */
 package serverx.route;
 
 import java.io.File;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,6 +37,7 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.OAuth2AuthHandler;
 import io.vertx.ext.web.handler.ResponseContentTypeHandler;
+import io.vertx.ext.web.handler.impl.CSRFHandlerImpl;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSSocket;
@@ -79,6 +84,13 @@ public class RouteInfo implements Comparable<RouteInfo> {
 
     /** The name of the permissions property in the session. */
     public static final String PERMISSIONS_SESSION_PROPERTY_KEY = "permissions";
+
+    /**
+     * The name of the CSRF token property in the session (should match
+     * {@code io.vertx.ext.web.handler.DEFAULT_HEADER_NAME}, since {@link CSRFHandlerImpl#handle(RoutingContext)}
+     * stores this value using {@code ctx.put(headerName, token)}).
+     */
+    public static final String CSRF_SESSION_PROPERTY_KEY = "X-XSRF-TOKEN";
 
     // -------------------------------------------------------------------------------------------------------------
 
@@ -154,6 +166,8 @@ public class RouteInfo implements Comparable<RouteInfo> {
      *            the template model class to HTML template
      * @param defaultPageHTMLTemplate
      *            the default page HTML template
+     * @param serverUri
+     *            the server URI
      * @param scanResult
      *            the scan result
      * @param routeHandlerInstance
@@ -166,7 +180,7 @@ public class RouteInfo implements Comparable<RouteInfo> {
     public RouteInfo(final Vertx vertx, final String handlerClassName, final Route routeAnnotation,
             final AnnotationInfo routeAnnotationInfo, final ClassRefTypeSignature ifaceSig,
             final Map<Class<? extends TemplateModel>, HTMLTemplate> templateModelClassToHTMLTemplate,
-            final HTMLTemplate defaultPageHTMLTemplate, final ScanResult scanResult,
+            final HTMLTemplate defaultPageHTMLTemplate, final URI serverUri, final ScanResult scanResult,
             final RouteHandler<Object> routeHandlerInstance)
             throws ReflectiveOperationException, SecurityException {
         this.handlerClassName = handlerClassName;
@@ -176,7 +190,7 @@ public class RouteInfo implements Comparable<RouteInfo> {
 
         // Pre-lookup the method handles for template class, so that it doesn't have to be done for each render
         final var htmlTemplate = getHTMLTemplate(routeHandlerInstance.getClass(), routeAnnotation,
-                getTypeArg(ifaceSig, 0), templateModelClassToHTMLTemplate, scanResult);
+                getTypeArg(ifaceSig, 0), templateModelClassToHTMLTemplate, serverUri, scanResult);
 
         this.routingContextHandlerInstance = ctx -> {
             // Create a new Future<TemplateModel>, and pass it to the handler
@@ -190,7 +204,8 @@ public class RouteInfo implements Comparable<RouteInfo> {
                         ctx.response().putHeader("content-type", "text/html; charset=utf-8")
                                 .end(htmlTemplate.renderPageOrFragment((TemplateModel) result,
                                         routeAnnotation.htmlTemplatePath(), defaultPageHTMLTemplate,
-                                        routeAnnotation.htmlPageTemplatePath()));
+                                        routeAnnotation.htmlPageTemplatePath(),
+                                        ctx.get(CSRF_SESSION_PROPERTY_KEY)));
                         break;
                     case JSON:
                         // Encode the result object as JSON, then send as response
@@ -252,6 +267,8 @@ public class RouteInfo implements Comparable<RouteInfo> {
      *            the template model class to HTML template
      * @param defaultPageHTMLTemplate
      *            the default page HTML template
+     * @param serverUri
+     *            the server URI
      * @param scanResult
      *            the scan result
      * @param socketHandlerInstance
@@ -264,7 +281,7 @@ public class RouteInfo implements Comparable<RouteInfo> {
     public RouteInfo(final Vertx vertx, final String handlerClassName, final Route routeAnnotation,
             final AnnotationInfo routeAnnotationInfo, final ClassRefTypeSignature ifaceSig,
             final Map<Class<? extends TemplateModel>, HTMLTemplate> templateModelClassToHTMLTemplate,
-            final HTMLTemplate defaultPageHTMLTemplate, final ScanResult scanResult,
+            final HTMLTemplate defaultPageHTMLTemplate, final URI serverUri, final ScanResult scanResult,
             final SocketHandler<Object> socketHandlerInstance)
             throws ReflectiveOperationException, SecurityException {
         this.handlerClassName = handlerClassName;
@@ -274,7 +291,7 @@ public class RouteInfo implements Comparable<RouteInfo> {
 
         // Pre-lookup the method handles for template class, so that it doesn't have to be done for each render
         final var htmlTemplate = getHTMLTemplate(socketHandlerInstance.getClass(), routeAnnotation,
-                getTypeArg(ifaceSig, 0), templateModelClassToHTMLTemplate, scanResult);
+                getTypeArg(ifaceSig, 0), templateModelClassToHTMLTemplate, serverUri, scanResult);
 
         // Wrap the Handler<SockJSSocket> with a Handler<RoutingContext>
         this.routingContextHandlerInstance = wrapSocketHandler(vertx, socket -> {
@@ -285,9 +302,10 @@ public class RouteInfo implements Comparable<RouteInfo> {
                     switch (routeAnnotation.responseType()) {
                     case HTML:
                         // Render the result TemplateModel into HTML, then send as response
+                        final var webSession = socket.webSession();
                         socket.write(htmlTemplate.renderPageOrFragment((TemplateModel) asyncResult.result(),
                                 routeAnnotation.htmlTemplatePath(), defaultPageHTMLTemplate,
-                                routeAnnotation.htmlPageTemplatePath()));
+                                routeAnnotation.htmlPageTemplatePath(), webSession.get(CSRF_SESSION_PROPERTY_KEY)));
                         break;
                     case JSON:
                         // Encode the result object as JSON, then send as response
@@ -340,7 +358,19 @@ public class RouteInfo implements Comparable<RouteInfo> {
         final var options = new SockJSHandlerOptions();
         final var sockJSHandler = SockJSHandler.create(vertx, options);
         sockJSHandler.socketHandler(socketHandler);
-        return sockJSHandler;
+
+        // Socket handlers do not have access to the RoutingContext that was used to mount the handler, but
+        // they do have access to the session. Copy the CSRF token from the RoutingContext into the session,
+        // then chain the handle() call to the socket handler.
+        return ctx -> {
+            if (ctx.session() != null) {
+                final var csrfToken = (String) ctx.get(CSRF_SESSION_PROPERTY_KEY);
+                if (csrfToken != null) {
+                    ctx.session().put(CSRF_SESSION_PROPERTY_KEY, csrfToken);
+                }
+            }
+            sockJSHandler.handle(ctx);
+        };
     }
 
     // -------------------------------------------------------------------------------------------------------------
@@ -359,6 +389,8 @@ public class RouteInfo implements Comparable<RouteInfo> {
      *            template be loaded and added to the set of available templates for this {@link TemplateModel}.
      * @param templateModelClassToHTMLTemplate
      *            the map from {@link TemplateModel} class to {@link HTMLTemplate}
+     * @param serverUri
+     *            the server URI
      * @param scanResult
      *            the {@link ScanResult}
      * @return the {@link HTMLTemplate}
@@ -366,7 +398,7 @@ public class RouteInfo implements Comparable<RouteInfo> {
     private static HTMLTemplate getHTMLTemplate(final Class<? extends TemplateModel> templateModelClass,
             final String htmlTemplatePath,
             final Map<Class<? extends TemplateModel>, HTMLTemplate> templateModelClassToHTMLTemplate,
-            final ScanResult scanResult) {
+            final URI serverUri, final ScanResult scanResult) {
         var htmlTemplate = templateModelClassToHTMLTemplate.get(templateModelClass);
         if (htmlTemplate == null) {
             // Template has not been seen before, create a new HTMLTemplate object and store it in the map
@@ -383,7 +415,8 @@ public class RouteInfo implements Comparable<RouteInfo> {
             // try loading template
             final var templateStr = HTMLTemplate.loadTemplateResourceFromPath(htmlTemplatePath, scanResult);
             if (templateStr != null && !templateStr.isEmpty()) {
-                htmlTemplate.addTemplateForPath(htmlTemplatePath, templateStr, templateModelClassToHTMLTemplate);
+                htmlTemplate.addTemplateForPath(htmlTemplatePath, templateStr, templateModelClassToHTMLTemplate,
+                        serverUri);
             } else {
                 throw new IllegalArgumentException("Could not find template path " + htmlTemplatePath
                         + " specified in " + Route.class.getSimpleName() + " annotation");
@@ -404,6 +437,8 @@ public class RouteInfo implements Comparable<RouteInfo> {
      *            the type arg
      * @param templateModelClassToHTMLTemplate
      *            the template model class to HTML template
+     * @param serverUri
+     *            the server URI
      * @param scanResult
      *            the scan result
      * @return the HTML template
@@ -411,7 +446,7 @@ public class RouteInfo implements Comparable<RouteInfo> {
     private static HTMLTemplate getHTMLTemplate(final Class<?> handlerClass, final Route routeAnnotation,
             final ClassRefTypeSignature typeArg,
             final Map<Class<? extends TemplateModel>, HTMLTemplate> templateModelClassToHTMLTemplate,
-            final ScanResult scanResult) {
+            final URI serverUri, final ScanResult scanResult) {
         // Check responseType is HTML
         if (routeAnnotation.responseType() == ResponseType.HTML) {
             // Check that typeArg implements TemplateModel (required for HTML response types)
@@ -421,10 +456,11 @@ public class RouteInfo implements Comparable<RouteInfo> {
                 final var templateModelClassCasted = (Class<? extends TemplateModel>) templateModelClass;
                 // Load the template specified in the Route annotation
                 final var htmlTemplate = getHTMLTemplate(templateModelClassCasted,
-                        routeAnnotation.htmlTemplatePath(), templateModelClassToHTMLTemplate, scanResult);
+                        routeAnnotation.htmlTemplatePath(), templateModelClassToHTMLTemplate, serverUri,
+                        scanResult);
                 // Preload the page template specified in the Route annotation
                 getHTMLTemplate(HTMLPageModel.class, routeAnnotation.htmlPageTemplatePath(),
-                        templateModelClassToHTMLTemplate, scanResult);
+                        templateModelClassToHTMLTemplate, serverUri, scanResult);
                 return htmlTemplate;
             } else {
                 throw new IllegalArgumentException("If responseType == " + ResponseType.class.getSimpleName()
@@ -493,9 +529,11 @@ public class RouteInfo implements Comparable<RouteInfo> {
      *
      * @param vertx
      *            the vertx
+     * @param serverUri
+     *            the server URI
      * @return the route info
      */
-    private static List<RouteInfo> getRouteInfo(final Vertx vertx) {
+    private static List<RouteInfo> getRouteInfo(final Vertx vertx, final URI serverUri) {
         // Find all TemplateModel implementations
         ServerxVerticle.logger.log(Level.INFO,
                 "Scanning package " + ServerxVerticle.serverProperties.templateModelPackage + " for "
@@ -518,7 +556,7 @@ public class RouteInfo implements Comparable<RouteInfo> {
                         // The default value of Route#htmlTemplatePath() is "", so associate the default 
                         // template with ""
                         htmlTemplate.addTemplateForPath(/* templatePath = */ "", defaultTemplateHTMLStr,
-                                templateModelClassToHTMLTemplate);
+                                templateModelClassToHTMLTemplate, serverUri);
                         templateModelClassToHTMLTemplate.put(templateModelClass, htmlTemplate);
                         // Remember default page template, once reached
                         if (templateModelClassInfo.getName().equals(HTMLPageModel.class.getName())) {
@@ -540,7 +578,7 @@ public class RouteInfo implements Comparable<RouteInfo> {
                     if (overrideDefaultPageTemplateStr != null) {
                         // Override the default template (with path "") with the user-specified template override
                         htmlPageModeTemplate.addTemplateForPath("", overrideDefaultPageTemplateStr,
-                                templateModelClassToHTMLTemplate);
+                                templateModelClassToHTMLTemplate, serverUri);
                         ServerxVerticle.logger.log(Level.INFO, "Overriding default HTML page template with "
                                 + ServerxVerticle.serverProperties.defaultPageHTMLTemplate);
                     } else {
@@ -579,7 +617,7 @@ public class RouteInfo implements Comparable<RouteInfo> {
                                 .getConstructor().newInstance();
                         routeHandlerOrder.add(new RouteInfo(vertx, classWithRouteAnnotation.getName(),
                                 routeAnnotation, routeAnnotationInfo, ifaceSig, templateModelClassToHTMLTemplate,
-                                htmlPageModeTemplate, scanResult, routeHandlerInstance));
+                                htmlPageModeTemplate, serverUri, scanResult, routeHandlerInstance));
 
                     } else if ((ifaceSig = findInterfaceSig(typeSig, SocketHandler.class.getName())) != null) {
                         // SocketHandler
@@ -588,7 +626,7 @@ public class RouteInfo implements Comparable<RouteInfo> {
                                 .loadClass().getConstructor().newInstance();
                         routeHandlerOrder.add(new RouteInfo(vertx, classWithRouteAnnotation.getName(),
                                 routeAnnotation, routeAnnotationInfo, ifaceSig, templateModelClassToHTMLTemplate,
-                                htmlPageModeTemplate, scanResult, socketHandlerInstance));
+                                htmlPageModeTemplate, serverUri, scanResult, socketHandlerInstance));
 
                     } else if ((ifaceSig = findInterfaceSig(typeSig, Handler.class.getName())) != null) {
                         // Handler<RoutingContext> or Handler<SockJSSocket>
@@ -888,11 +926,13 @@ public class RouteInfo implements Comparable<RouteInfo> {
      *            the auth handler
      * @param mongoClient
      *            the mongo client
+     * @param serverUri
+     *            the server URI
      */
     public static void addRoutes(final Vertx vertx, final Router router, final OAuth2AuthHandler authHandler,
-            final MongoClient mongoClient) {
+            final MongoClient mongoClient, final URI serverUri) {
         // Get all route info, add route handlers in order 
-        for (final var routeInfo : getRouteInfo(vertx)) {
+        for (final var routeInfo : getRouteInfo(vertx, serverUri)) {
             ServerxVerticle.logger.info("Found " + (routeInfo.isSocketHandler ? "SockJS" : "HTTP") + "->"
                     + routeInfo.routeAnnotation.responseType()
                     + (routeInfo.routeAnnotation.isFailureHandler() ? " failure" : "")

@@ -6,9 +6,16 @@ Serverx strives to enable the setup of a web server with a *minimum amount of co
 of Vert.x boilerplate into a reusable library, and by allowing for flexible and simple access to a wide array of
 features of the `vertx-core` and `vertx-web` projects.
 
-Serverx adopts a *secure by default* mindset -- all reasonable security headers are enabled by default, the built-in
-template engine follows all OWASP guidelines for escaping, XSS protection is enabled by default, SSL is enabled by
-default, routes require a user to be authenticated by default, etc.
+Serverx adopts a *secure by default* mindset:
+
+* [all reasonable security headers](https://vertx.io/blog/writing-secure-vert-x-web-apps#security-headers) are enabled by default
+* the built-in template engine follows all OWASP guidelines for escaping parameters
+* XSS and protection measures are put in place by default
+* CSRF protection is enabled by default, and the built-in template engine automatically inserts CSRF tokens into HTML forms
+* SSL is enabled by default, and HTTP requests automatically redirect to HTTPS requests with the same path
+* routes require a user to be authenticated by default
+* cookies are HTTPS-only and disallowed for Javascript requests
+* etc.
 
 Serverx also strives to be as fast and scalable as possible by building on the asynchronous multithreaded core of
 Vert.x, by using internal compilation and caching of HTML templates, by using `MethodHandle` to perform

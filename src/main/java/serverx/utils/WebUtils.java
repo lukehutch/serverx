@@ -33,6 +33,7 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
@@ -173,30 +174,42 @@ public class WebUtils {
      *            the href URI
      * @return true, if is local URL
      */
-    public static boolean isLocalURL(final String hrefURI) {
-        return
-        //Not empty/null/'#'
-        hrefURI != null && !hrefURI.isEmpty() && !hrefURI.startsWith("#") //
-        // Not external/absolute URI
-                && !EXTERNAL_URI.matcher(hrefURI).matches() //
-                // Not template param
-                && !hrefURI.contains("${");
+    public static boolean isLocalURL(final String hrefURI, final URI serverUri) {
+        try {
+            return
+            // Not null / empty / "#..." / "/..."
+            hrefURI != null && !hrefURI.isEmpty() && !hrefURI.startsWith("#") && !hrefURI.startsWith("/") //
+            // Not template param
+                    && !hrefURI.contains("{{")
+                    // Not external/absolute URI, or is external URI but has same origin as server
+                    && (!EXTERNAL_URI.matcher(hrefURI).matches() || hasSameOrigin(new URI(hrefURI), serverUri));
+        } catch (final URISyntaxException e) {
+            return false;
+        }
+    }
+
+    private static boolean hasSameOrigin(final URI uri0, final URI uri1) {
+        return Objects.equals(uri0.getScheme(), uri1.getScheme()) //
+                && Objects.equals(uri0.getHost(), uri1.getHost()) //
+                && Objects.equals(uri0.getPort(), uri1.getPort());
     }
 
     /**
      * Resolve a relative path in an URI attribute to an absolute path.
-     * 
+     *
      * @param hrefURL
      *            the URI to resolve, e.g. "../css/main.css"
      * @param baseURL
      *            the base URI to resolve relative to, without a trailing slash, e.g. "/site/res". If baseURL is "",
      *            then ".." and "." are still resolved, but URLs are not made absolute, i.e. "css/main.css" remains
      *            unchanged, but "../css/main.css" turns into "/css/main.css".
+     * @param serverUri
+     *            the server URI
      * @return the absolute path of the URI, e.g. "/site/css/main.css"
      */
-    public static String resolveHREF(final String hrefURL, final String baseURL) {
+    public static String resolveHREF(final String hrefURL, final String baseURL, final URI serverUri) {
         // Return original URL if it is empty, starts with "#", or is a template param
-        if (isLocalURL(hrefURL)) {
+        if (isLocalURL(hrefURL, serverUri)) {
             // Build new path for the linked resource
             final StringBuilder hrefURLResolved = new StringBuilder(
                     hrefURL.startsWith("//") ? "//" : hrefURL.startsWith("/") ? "/" : baseURL);

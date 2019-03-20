@@ -6,16 +6,21 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Comment;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.impl.CSRFHandlerImpl;
+import serverx.server.ServerxVerticle;
 import serverx.utils.StringUtils;
 import serverx.utils.WebUtils;
 
@@ -24,16 +29,21 @@ import serverx.utils.WebUtils;
  */
 class HTMLTemplateLoader {
     /**
+     * The name of the form input containing the CSRF token (should match
+     * {@code io.vertx.ext.web.handler.DEFAULT_HEADER_NAME}, since {@link CSRFHandlerImpl#handle(RoutingContext)}
+     * checks this value using {@code ctx.request().getFormAttribute(headerName)}).
+     */
+    private static final String CSRF_FORM_INPUT_NAME = "X-XSRF-TOKEN";
+
+    /**
      * If true, require all template params in URL-typed HTML attributes to be bound to fields of type java.net.URI,
      * and disallow any content in the attribute value other than the parameter string. This is to prevent injection
      * attacks with badly-formed URLs, as recommended by OWASP.
      */
-    public static boolean STRICT_URI_ATTRS = false;
-
-    // -------------------------------------------------------------------------------------------------------------
+    private static boolean STRICT_URI_ATTRS = false;
 
     /** Pattern for template parameters, of the form "{{name}}". */
-    public static final Pattern TEMPLATE_PARAM_PATTERN = Pattern.compile("\\{\\{([a-zA-Z_][a-zA-Z0-9_]*)\\}\\}");
+    private static final Pattern TEMPLATE_PARAM_PATTERN = Pattern.compile("\\{\\{([a-zA-Z_][a-zA-Z0-9_]*)\\}\\}");
 
     // -------------------------------------------------------------------------------------------------------------
 
@@ -68,7 +78,7 @@ class HTMLTemplateLoader {
          *            the render buf
          */
         public abstract void renderToString(TemplateModel templateModel, boolean indent, int renderIndentLevel,
-                StringBuilder renderBuf);
+                String csrfToken, StringBuilder renderBuf);
 
         /**
          * Finish init.
@@ -103,7 +113,7 @@ class HTMLTemplateLoader {
          */
         @Override
         public void renderToString(final TemplateModel ignored, final boolean indent, final int renderIndentLevel,
-                final StringBuilder renderBuf) {
+                final String csrfToken, final StringBuilder renderBuf) {
             StringUtils.appendUnescaped(rawHTML, indent, renderIndentLevel, renderBuf);
         }
     }
@@ -199,11 +209,12 @@ class HTMLTemplateLoader {
         }
 
         /* (non-Javadoc)
-         * @see serverx.template.HTMLTemplateLoader.TemplatePart#renderToString(serverx.template.TemplateModel, boolean, int, java.lang.StringBuilder)
+         * @see serverx.template.HTMLTemplateLoader.TemplatePart#renderToString(
+         * serverx.template.TemplateModel, boolean, int, java.lang.StringBuilder)
          */
         @Override
         public void renderToString(final TemplateModel templateModel, final boolean indent,
-                final int renderIndentLevel, final StringBuilder renderBuf) {
+                final int renderIndentLevel, final String csrfToken, final StringBuilder renderBuf) {
             try {
                 final var fieldVal = fieldGetterMethodHandle.invoke(templateModel);
                 if (fieldVal != null) {
@@ -214,7 +225,7 @@ class HTMLTemplateLoader {
                     // Nested templates must default to their default HTML template, since there is
                     // no way to specify the template type for a nested template
                     fieldDefaultHtmlTemplate.renderFragment((TemplateModel) fieldVal, /* use default template */ "",
-                            indent, indentLevel + renderIndentLevel, renderBuf);
+                            indent, indentLevel + renderIndentLevel, csrfToken, renderBuf);
                 }
             } catch (final Throwable e) {
                 throw new RuntimeException(e);
@@ -246,18 +257,31 @@ class HTMLTemplateLoader {
         }
 
         /* (non-Javadoc)
-         * @see serverx.template.HTMLTemplateLoader.TemplatePart#renderToString(serverx.template.TemplateModel, boolean, int, java.lang.StringBuilder)
+         * @see serverx.template.HTMLTemplateLoader.TemplatePart#renderToString(
+         * serverx.template.TemplateModel, boolean, int, java.lang.StringBuilder)
          */
         @Override
         public void renderToString(final TemplateModel templateModel, final boolean indent,
-                final int renderIndentLevel, final StringBuilder renderBuf) {
-            try {
-                final var fieldVal = fieldGetterMethodHandle.invoke(templateModel);
-                if (fieldVal != null) {
-                    renderToString(fieldVal, indent, renderIndentLevel, renderBuf);
+                final int renderIndentLevel, final String csrfToken, final StringBuilder renderBuf) {
+            if (paramName.equals(HTMLTemplate.CSRF_TEMPLATE_PARAM_NAME)) {
+                // Special handling for CSRF token
+                if (csrfToken != null) {
+                    // Add CSRF token to form
+                    StringUtils.appendEscaped(csrfToken, false, indent, renderIndentLevel, renderBuf);
+                } else {
+                    ServerxVerticle.logger.log(Level.SEVERE, "CSRF token is null, cannot add to form");
                 }
-            } catch (final Throwable e) {
-                throw new RuntimeException(e);
+            } else {
+                // For other parameter names, get the value of the field of the same name in the template model
+                // and render the value to string
+                try {
+                    final var fieldVal = fieldGetterMethodHandle.invoke(templateModel);
+                    if (fieldVal != null) {
+                        renderToString(fieldVal, indent, renderIndentLevel, renderBuf);
+                    }
+                } catch (final Throwable e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
@@ -299,11 +323,12 @@ class HTMLTemplateLoader {
         }
 
         /* (non-Javadoc)
-         * @see serverx.template.HTMLTemplateLoader.TemplatePart#renderToString(serverx.template.TemplateModel, boolean, int, java.lang.StringBuilder)
+         * @see serverx.template.HTMLTemplateLoader.TemplatePart#renderToString(
+         * serverx.template.TemplateModel, boolean, int, java.lang.StringBuilder)
          */
         @Override
         public void renderToString(final TemplateModel ignored, final boolean indent, final int renderIndentLevel,
-                final StringBuilder renderBuf) {
+                final String csrfToken, final StringBuilder renderBuf) {
             if (renderBuf.length() > 0) {
                 renderBuf.append('\n');
             }
@@ -393,16 +418,25 @@ class HTMLTemplateLoader {
             }
             // Write any string part before param as a TemplatePart 
             flushBufToTemplatePart(buf, templateParts);
+
             // Get param name
             final String paramName = matcher.group(1);
             // Get field of same name in template model
-            final var methodHandle = fieldNameToMethodHandle.get(paramName);
-            if (methodHandle == null) {
-                throw new IllegalArgumentException(
-                        "Template contains parameter that does not match any public field in the corresponding "
-                                + TemplateModel.class.getSimpleName() + " class: " + paramName);
+            final var isCsrfParam = paramName.equals(HTMLTemplate.CSRF_TEMPLATE_PARAM_NAME);
+            final MethodHandle methodHandle;
+            if (isCsrfParam) {
+                // No need to look up field for CSRF template parameter
+                methodHandle = null;
+            } else {
+                methodHandle = fieldNameToMethodHandle.get(paramName);
+                if (methodHandle == null) {
+                    throw new IllegalArgumentException(
+                            "Template contains parameter that does not match any public field in the corresponding "
+                                    + TemplateModel.class.getSimpleName() + " class: " + paramName);
+                }
             }
-            final var fieldType = methodHandle.type().returnType();
+            final var fieldType = isCsrfParam ? String.class : methodHandle.type().returnType();
+
             final var isURITypedField = URI.class.isAssignableFrom(fieldType);
             if (STRICT_URI_ATTRS && isURIAttr != isURITypedField) {
                 throw new IllegalArgumentException(
@@ -592,6 +626,33 @@ class HTMLTemplateLoader {
     // -------------------------------------------------------------------------------------------------------------
 
     /**
+     * Add CSRF template params to forms.
+     *
+     * @param document
+     *            the document
+     * @param serverUri
+     *            the server URI
+     */
+    private static void addCSRFTemplateParams(final Document document, final URI serverUri) {
+        for (final Element formElt : document.getElementsByTag("form")) {
+            // Remove any CSRF input elements that are already in the form (shouldn't be there)
+            for (final Element csrfElt : formElt.getElementsByAttributeValue("name", CSRF_FORM_INPUT_NAME)) {
+                csrfElt.remove();
+            }
+            // Ignore forms that post to a different domain
+            if (!formElt.attr("action").isEmpty() && !WebUtils.isLocalURL(formElt.attr("action"), serverUri)) {
+                // Add CSRF input to form
+                final Element csrfElt = formElt.appendElement("input");
+                csrfElt.attr("name", CSRF_FORM_INPUT_NAME);
+                csrfElt.attr("type", "hidden");
+                csrfElt.attr("value", "{{" + HTMLTemplate.CSRF_TEMPLATE_PARAM_NAME + "}}");
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------------------------------------------
+
+    /**
      * Parses the template.
      *
      * @param templateStr
@@ -602,11 +663,14 @@ class HTMLTemplateLoader {
      *            the indent
      * @param templateModelClassToHTMLTemplate
      *            the template model class to HTML template
+     * @param serverUri
+     *            the server URI
      * @return the list
      */
     static List<TemplatePart> parseTemplate(final String templateStr,
             final Map<String, MethodHandle> fieldNameToMethodHandle, final boolean indent,
-            final Map<Class<? extends TemplateModel>, HTMLTemplate> templateModelClassToHTMLTemplate) {
+            final Map<Class<? extends TemplateModel>, HTMLTemplate> templateModelClassToHTMLTemplate,
+            final URI serverUri) {
         // See if this is a whole-page HTML document, as opposed to an HTML fragment
         final var firstTagIdx = templateStr.indexOf("<");
         final var isWholeDocument = firstTagIdx >= 0 && ((templateStr.length() >= 5
@@ -615,8 +679,9 @@ class HTMLTemplateLoader {
                         && templateStr.substring(firstTagIdx, firstTagIdx + 9).toLowerCase().equals("<!doctype")));
 
         // Parse the HTML -- whole-page templates need Jsoup.parse(), fragments need Jsoup.parseBodyFragment()
-        final List<Node> nodes = isWholeDocument ? Jsoup.parse(templateStr).childNodes()
-                : Jsoup.parseBodyFragment(templateStr).body().childNodes();
+        final Document document = isWholeDocument ? Jsoup.parse(templateStr) : Jsoup.parseBodyFragment(templateStr);
+        addCSRFTemplateParams(document, serverUri);
+        final List<Node> nodes = isWholeDocument ? document.childNodes() : document.body().childNodes();
 
         // Turn the list of Nodes into TemplateParts
         final var templateParts = new ArrayList<TemplatePart>();

@@ -2,6 +2,7 @@ package serverx.template;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,11 @@ public class HTMLTemplate {
 
     /** The Constant TITLE_FIELD_NAME. */
     private static final String TITLE_FIELD_NAME = "_title";
+
+    /**
+     * The name of the template parameter for the CSRF token.
+     */
+    public static final String CSRF_TEMPLATE_PARAM_NAME = "_csrf";
 
     /**
      * Constructor.
@@ -75,12 +81,15 @@ public class HTMLTemplate {
      *            the template str
      * @param templateModelClassToHTMLTemplate
      *            the template model class to HTML template
+     * @param serverUri
+     *            the server URI
      */
     public void addTemplateForPath(final String templatePath, final String templateStr,
-            final Map<Class<? extends TemplateModel>, HTMLTemplate> templateModelClassToHTMLTemplate) {
+            final Map<Class<? extends TemplateModel>, HTMLTemplate> templateModelClassToHTMLTemplate,
+            final URI serverUri) {
         final List<TemplatePart> templateParts = HTMLTemplateLoader.parseTemplate(templateStr,
                 fieldNameToMethodHandle, ServerxVerticle.serverProperties.indentHTML,
-                templateModelClassToHTMLTemplate);
+                templateModelClassToHTMLTemplate, serverUri);
         if (templatePath.isEmpty()) {
             defaultTemplateParts = templateParts;
         } else {
@@ -187,11 +196,13 @@ public class HTMLTemplate {
      *            the indent
      * @param indentLevel
      *            the indent level
+     * @param csrfToken
+     *            the CSRF token
      * @param renderBuf
      *            the render buf
      */
     void renderFragment(final TemplateModel templateModel, final String templatePath, final boolean indent,
-            final int indentLevel, final StringBuilder renderBuf) {
+            final int indentLevel, final String csrfToken, final StringBuilder renderBuf) {
         if (templateModel == null) {
             // Null values result in no output
             return;
@@ -214,7 +225,7 @@ public class HTMLTemplate {
         }
         for (final TemplatePart part : templateParts) {
             try {
-                part.renderToString(templateModel, indent, indentLevel, renderBuf);
+                part.renderToString(templateModel, indent, indentLevel, csrfToken, renderBuf);
             } catch (final Exception e) {
                 throw new IllegalArgumentException(
                         "Exception while rendering template for class " + templateModel.getClass().getName(), e);
@@ -229,12 +240,15 @@ public class HTMLTemplate {
      *            the template model
      * @param templatePath
      *            the template path
+     * @param csrfToken
+     *            the CSRF token
      * @param renderBuf
      *            the render buf
      */
-    void renderFragment(final TemplateModel templateModel, final String templatePath,
+    void renderFragment(final TemplateModel templateModel, final String templatePath, final String csrfToken,
             final StringBuilder renderBuf) {
-        renderFragment(templateModel, templatePath, ServerxVerticle.serverProperties.indentHTML, 0, renderBuf);
+        renderFragment(templateModel, templatePath, ServerxVerticle.serverProperties.indentHTML, 0, csrfToken,
+                renderBuf);
     }
 
     /**
@@ -248,10 +262,12 @@ public class HTMLTemplate {
      *            the page HTML template
      * @param pageHTMLTemplatePath
      *            the page HTML template path
+     * @param csrfToken
+     *            the CSRF token
      * @return the string
      */
     public String renderPageOrFragment(final TemplateModel templateModel, final String templatePath,
-            final HTMLTemplate pageHTMLTemplate, final String pageHTMLTemplatePath) {
+            final HTMLTemplate pageHTMLTemplate, final String pageHTMLTemplatePath, final String csrfToken) {
         if (!isPageTemplate() && templateModel == null) {
             // Null values result in empty output for fragments
             return "";
@@ -260,7 +276,7 @@ public class HTMLTemplate {
         try {
             if (!isPageTemplate()) {
                 // Render an HTML fragment
-                renderFragment(templateModel, templatePath, buf);
+                renderFragment(templateModel, templatePath, csrfToken, buf);
             } else {
                 // Render an HTML page, by rendering the HTML fragment into the {{_body}} attribute of page template
                 List<TemplatePart> pageTemplateParts;
@@ -290,11 +306,12 @@ public class HTMLTemplate {
 
                     } else if (pageTemplatePart.paramName.equals("_body")) {
                         // Render page body into "_body" parameter of template model 
-                        renderFragment(templateModel, templatePath, indent, /* indentLevel = */ 2, buf);
+                        renderFragment(templateModel, templatePath, indent, /* indentLevel = */ 2, csrfToken, buf);
 
                     } else {
                         // Render non-parameter part of page template
-                        pageTemplatePart.renderToString(/* ignored */ null, indent, /* indentLevel = */ 0, buf);
+                        pageTemplatePart.renderToString(/* ignored */ null, indent, /* indentLevel = */ 0,
+                                csrfToken, buf);
                     }
                 }
             }

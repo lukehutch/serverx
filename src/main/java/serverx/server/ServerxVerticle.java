@@ -370,8 +370,8 @@ public class ServerxVerticle extends AbstractVerticle {
             // -----------------------------------------------------------------------------------------------------
 
             // Add CSRF handler
-            router.route()
-                    .handler(CSRFHandler.create(/* secret = */ VertxContextPRNG.current(vertx).nextString(32)));
+            router.route().handler(CSRFHandler.create(/* secret = */ VertxContextPRNG.current(vertx).nextString(32))
+                    .setNagHttps(true));
 
             // Add a CORS handler
             if (!serverProperties.corsAllowedOriginPattern.isBlank()
@@ -396,9 +396,14 @@ public class ServerxVerticle extends AbstractVerticle {
             // Add a timeout handler
             router.route().handler(TimeoutHandler.create(serverProperties.requestTimeout_ms));
 
+            // Produce server base URI
+            final var serverUri = new URI(serverProperties.useSSL ? "https" : "http", null, serverProperties.host,
+                    serverProperties.useSSL ? serverProperties.httpsPort : serverProperties.httpPort, null, null,
+                    null);
+
             // Add route handlers
             try {
-                RouteInfo.addRoutes(vertx, router, googleAuthHandler, mongoClient);
+                RouteInfo.addRoutes(vertx, router, googleAuthHandler, mongoClient, serverUri);
             } catch (final Exception e) {
                 die("Could not add routes", e);
             }
@@ -442,7 +447,7 @@ public class ServerxVerticle extends AbstractVerticle {
             }
 
             // Start server
-            logger.info("Starting server on port " + port);
+            logger.info("Starting server at " + serverUri);
             final var serverFuture = Future.future();
             final HttpServer server = vertx.createHttpServer(httpServerOptions);
             server.requestHandler(router).listen(port, result -> {
