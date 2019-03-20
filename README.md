@@ -312,8 +312,8 @@ public class SiteSettingsHandler implements RouteHandler<SiteSettingsModel> {
                 /* query = */ new JsonObject().put("_id", "siteSettings"),
                 result -> {
                     if (result.succeeded()) {
-                        JsonObject settings = result.result().get(0);
-                        SiteSettings siteSettings = settings.mapTo(SiteSettingsModel.class);
+                        JsonObject siteSettingsJson = result.result().get(0);
+                        SiteSettings siteSettings = siteSettingsJson.mapTo(SiteSettingsModel.class);
                         response.complete(siteSettings);
                     } else {
                         response.fail(result.cause());
