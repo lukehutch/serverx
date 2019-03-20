@@ -14,7 +14,7 @@ Serverx also strives to be as fast and scalable as possible by building on the a
 Vert.x, by using internal compilation and caching of HTML templates, by using `MethodHandle` to perform
 reflective access only at server startup time, etc. 
 
-Serverx is a new project, and works fine for the author's purposes, but has not yet been tested widely.
+Serverx is a new project, and is functional, but has not yet been tested widely.
 
 ## Setting up routes
 
