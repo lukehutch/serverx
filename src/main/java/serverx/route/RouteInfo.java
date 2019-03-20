@@ -530,9 +530,28 @@ public class RouteInfo implements Comparable<RouteInfo> {
                             + templateModelClass.getName() + ": " + e);
                 }
             }
-        }
-        if (htmlPageModeTemplate == null) {
-            throw new RuntimeException("Could not find default template for " + HTMLPageModel.class.getName());
+            if (htmlPageModeTemplate == null) {
+                throw new RuntimeException("Could not find default template for " + HTMLPageModel.class.getName());
+            }
+            if (!ServerxVerticle.serverProperties.defaultPageHTMLTemplate.isEmpty()) {
+                try {
+                    final var overrideDefaultPageTemplateStr = HTMLTemplate.loadTemplateResourceFromPath(
+                            ServerxVerticle.serverProperties.defaultPageHTMLTemplate, scanResult);
+                    if (overrideDefaultPageTemplateStr != null) {
+                        // Override the default template (with path "") with the user-specified template override
+                        htmlPageModeTemplate.addTemplateForPath("", overrideDefaultPageTemplateStr,
+                                templateModelClassToHTMLTemplate);
+                        ServerxVerticle.logger.log(Level.INFO, "Overriding default HTML page template with "
+                                + ServerxVerticle.serverProperties.defaultPageHTMLTemplate);
+                    } else {
+                        ServerxVerticle.logger.log(Level.INFO, "Could not find override HTML page template "
+                                + ServerxVerticle.serverProperties.defaultPageHTMLTemplate);
+                    }
+                } catch (final IllegalArgumentException e) {
+                    ServerxVerticle.logger.log(Level.INFO, "Could not find override HTML page template "
+                            + ServerxVerticle.serverProperties.defaultPageHTMLTemplate + " : " + e.getMessage());
+                }
+            }
         }
 
         // Find all classes that are annotated with @Route and that implement Handler<RoutingContext>
