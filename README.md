@@ -373,7 +373,7 @@ indentJSON=true
 ## Starting the server
 
 ```java
-public class YourMainClass {
+public class MyMainClass {
     public static void main(final String[] args) throws IOException {
         Vertx.vertx().deployVerticle(new ServerxVerticle());
     }
@@ -383,7 +383,7 @@ public class YourMainClass {
 or 
 
 ```bash
-java -cp serverx.jar:yourproject.jar io.vertx.core.Starter run serverx.server.ServerxVerticle
+java -cp serverx.jar:myproject.jar io.vertx.core.Starter run serverx.server.ServerxVerticle
 ```
 
 
