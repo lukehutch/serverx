@@ -152,24 +152,6 @@ public class WeatherHandler implements RouteHandler<Weather> {
 If a `TemplateModel` has no default HTML template, you will need to manually specify an `htmlTemplatePath`
 to use for each `Route`.
 
-#### Rendering complete HTML pages
-
-Note that all the HTML template examples given so far render only an HTML fragment, not a complete page.
-An HTML template can contain a complete HTML page, but usually all or most pages on a site need to use the
-same surrounding page content, and only the `<title>` and `<body>` elements need to change on a page-by-page
-basis.
-
-Consequently, if a `TemplateModel` implementation contains a field `public String _title`, after the `TemplateModel`
-has been rendered into an HTML fragment, the value of the `_title` field is inserted into the `{{_title}}` parameter
-of a *page template*, and the value of the rendered HTML fragment is inserted into the `{{_body}}` parameter of
-the page template.
-
-The [default page template](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/model/HTMLPageModel.html)
-is used unless it is overridden by specifying an override path of the form `htmlPageTemplatePath = "/page-template-override-path.html"`
-in the `Route` annotation of the route handler.
-
-The default page template includes [UIKit](https://getuikit.com/), [SennaJS](https://sennajs.com/), and [jQuery](https://jquery.com/). 
-
 #### Rendering nested HTML templates 
 
 When using `responseType = ResponseType.HTML`, if the response object, which must be a `TemplateModel`, has fields
@@ -189,10 +171,27 @@ public class InnerWidget extends TemplateModel {
 }
 ```
 
-
 (The rendering of nested `TemplateModel` instances can currently only use the default template for the `TemplateModel`
 implementing class. This may be changed in future by extending the syntax of the template parameters, e.g.
 using `{{paramName template="/path/to/override-template.html"}}`, but this is not currently supported.)
+
+#### Rendering complete HTML pages
+
+Note that all the HTML template examples given so far render only an HTML fragment, not a complete page.
+An HTML template can contain a complete HTML page, but usually all or most pages on a site need to use the
+same surrounding page content, and only the `<title>` and `<body>` elements need to change on a page-by-page
+basis.
+
+Consequently, if a `TemplateModel` implementation contains a field `public String _title`, after the `TemplateModel`
+has been rendered into an HTML fragment, the value of the `_title` field is inserted into the `{{_title}}` parameter
+of a *page template*, and the value of the rendered HTML fragment is inserted into the `{{_body}}` parameter of
+the page template.
+
+The [default page template](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/model/HTMLPageModel.html)
+is used unless it is overridden by specifying an override path of the form `htmlPageTemplatePath = "/page-template-override-path.html"`
+in the `Route` annotation of the route handler.
+
+The default page template includes [UIKit](https://getuikit.com/), [SennaJS](https://sennajs.com/), and [jQuery](https://jquery.com/). 
 
 ### Custom handlers
 
