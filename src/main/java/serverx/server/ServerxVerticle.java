@@ -354,8 +354,7 @@ public class ServerxVerticle extends AbstractVerticle {
                     .addAuthority("openid"); // TODO: is openid needed?
             router.route().handler(googleAuthHandler);
 
-            //            // Set up MongoDB-based auth provider after the Google OAuth provider, to handle roles and permissions
-            //            // after a user logs in with OAuth2
+            //            // Set up MongoDB-based auth provider
             //            JsonObject authProperties = new JsonObject();
             //            MongoAuth mongoAuthProvider = MongoAuth.create(mongoClient, authProperties);
             //
