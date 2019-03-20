@@ -234,6 +234,16 @@ a user to be authenticated before the route can be accessed, and the user will b
 an OAuth2 login page. Currently only Google OAuth2 is supported, but other login types will be supported in
 future (pull requests welcome).
 
+```java
+@Route(path = "/secret.html")
+public class SecretPage implements RouteHandler<SecretPageModel> {
+    @Override
+    public void handle(RoutingContext ctx, Future<SecretPageModel> secretResponse) {
+        SecretStuff.getSecretResponse(ctx, secretResponse);
+    }
+}
+```
+
 ## Authorization
 
 Role-based access control (RBAC) is supported on routes via the `permissions = { }` list parameter of a `Route`
