@@ -90,6 +90,12 @@ public class ServerProperties {
     public String uploadsDir = "uploads";
 
     /**
+     * If set to the resource path for an HTML file, overrides the default page HTML template. The template should
+     * contain the parameters {@code _title} and {@code _body}.
+     */
+    public String defaultPageHTMLTemplate = "";
+
+    /**
      * If true, pretty print (indent) HTML. HTML template rendering is faster (and response is smaller) if HTML is
      * not indented.
      */

@@ -189,9 +189,22 @@ the page template.
 
 The [default page template](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/model/HTMLPageModel.html)
 is used unless it is overridden by specifying an override path of the form `htmlPageTemplatePath = "/page-template-override-path.html"`
-in the `Route` annotation of the route handler.
+in the `Route` annotation of the route handler:
 
-The default page template includes [UIKit](https://getuikit.com/), [SennaJS](https://sennajs.com/), and [jQuery](https://jquery.com/). 
+```java
+@Route(path = "/info.html", htmlPageTemplatePath = "/templates/info.html")
+public class InfoHandler implements RouteHandler<InfoModel> {
+    @Override
+    public void handle(RoutingContext ctx, Future<InfoModel> response) {
+        Info.getInfoModel(ctx, response);
+    }
+}
+```
+
+You can also override the default page HTML template by specifying `defaultPageHTMLTemplate=/path/to/page-template.html`
+in the `server.properties` file. 
+
+The default page template includes [UIKit](https://getuikit.com/), [SennaJS](https://sennajs.com/), and [jQuery](https://jquery.com/).
 
 ### Custom handlers
 
@@ -289,6 +302,25 @@ The `Route` annotation supports many other configuration options --
 Serverx requires a running MongoDB instance. You can access this database using the static field
 `ServerxVerticle.mongoClient`. MongoDB should be accessed in an asynchronous way, using callbacks.
 
+```java
+@Route(path = "/settings.html", permissions = { "role:manager" })
+public class SiteSettingsHandler implements RouteHandler<SiteSettingsModel> {
+    @Override
+    public void handle(RoutingContext ctx, Future<SiteSettingsModel> response) {
+        ServerxVerticle.mongoClient.find(
+                "settings", new JsonObject().put("_id", "siteSettings"),
+                result -> {
+                    if (result.succeeded()) {
+                        JsonObject settings = result.result().get(0);
+                        response.complete(settings.mapTo(SiteSettingsModel.class));
+                    } else {
+                        response.fail(result.cause());
+                    }
+                });
+    }
+}
+```
+
 The database name and connection string are specified in the [server configuration file](#configuring-the-server). 
 
 ## Configuring the server
@@ -323,6 +355,10 @@ dbName=mydomaindb
 
 # The file containing clientId and clientSecret properties for Google OAuth2
 googleSecretProperties=/home/user/mydomain-config/google_secret.properties
+
+# The default page HTML template, if you want to override the default
+# (a resource path, not a filesystem path)
+defaultPageHTMLTemplate=/templates/page-template.html
 
 # Whether or not to indent (prettyprint) HTML and/or JSON in the response.
 # HTML template rendering and JSON serialization is faster (and the response
