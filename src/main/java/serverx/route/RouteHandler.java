@@ -15,7 +15,7 @@ public interface RouteHandler<T> {
      *
      * @param context
      *            the {@link RoutingContext}.
-     * @param response
+     * @param responseFuture
      *            the response {@link Future}, which wraps the response object.
      */
     public void handle(RoutingContext context, Future<T> responseFuture);
