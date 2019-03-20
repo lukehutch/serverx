@@ -294,7 +294,7 @@ utility class.
 
 ## Other `Route` configuration options
 
-The `Route` annotation supports many other configuration options --
+The `Route` annotation supports many other configuration options (e.g. changing the HTTP request method to `POST`) --
 [check the Javadoc](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/route/Route.java) for details.
 
 ## Database access
