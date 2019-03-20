@@ -21,8 +21,10 @@ Serverx is a new project, and works fine for the author's purposes, but has not 
 When you start the Serverx server, it will scan the classes in your project (using [ClassGraph](https://github.com/classgraph/classgraph))
 to find route handlers, start a Vertx server, and automatically add the discovered routes.
 
-Route handlers should be annotated with `serverx.route.Route`, and should implement `RouteHandler<T>` for some
-"response object type" `T`. The second parameter of the `handle` method will have type `Future<T>`. The value that
+Route handlers should be annotated with
+[`serverx.route.Route`](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/route/Route.java),
+and should implement [`RouteHandler<T>`](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/route/RouteHandler.java)
+for some "response object type" `T`. The second parameter of the `handle` method will have type `Future<T>`. The value that
 this `Future` is completed with will be referred to as the "response object". 
 
 ### Serving `text/plain` responses
@@ -33,7 +35,7 @@ You can serve the string `Hello world` with MIME type `text/plain` from the URL 
 @Route(path = "/hello/world", requireLogin = false, responseType = ResponseType.STRING)
 public class HelloWorld implements RouteHandler<String> {
     @Override
-    public void handle(final RoutingContext event, final Future<String> response) {
+    public void handle(final RoutingContext ctx, final Future<String> response) {
         response.complete("Hello world");
     }
 }
@@ -50,9 +52,9 @@ so the response object type does not have to be String. For example, the followi
 
 ```java
 @Route(path = "/xyz", requireLogin = false, responseType = ResponseType.STRING)
-public class HelloWorld implements RouteHandler<List<String>> {
+public class XYZ implements RouteHandler<List<String>> {
     @Override
-    public void handle(final RoutingContext event, final Future<List<String>> response) {
+    public void handle(final RoutingContext ctx, final Future<List<String>> response) {
         response.complete(Arrays.asList("x", "y", "z"));
     }
 }
@@ -68,9 +70,9 @@ the `responseType` parameter of the annotation to `ResponseType.JSON`:
 
 ```java
 @Route(path = "/widget", requireLogin = false, responseType = ResponseType.JSON)
-public class HelloWorld implements RouteHandler<Widget> {
+public class WidgetHandler implements RouteHandler<Widget> {
     @Override
-    public void handle(final RoutingContext event, final Future<Widget> response) {
+    public void handle(final RoutingContext ctx, final Future<Widget> response) {
         response.complete(new Widget("Fancy Widget", 100, Currency.DOLLARS));
     }
 }
@@ -86,9 +88,9 @@ You can render any Java object into HTML by simply changing the `responseType` p
 
 ```java
 @Route(path = "/datetoday.html", requireLogin = false, responseType = ResponseType.HTML)
-public class HelloWorld implements RouteHandler<DateToday> {
+public class DateHandler implements RouteHandler<DateToday> {
     @Override
-    public void handle(final RoutingContext event, final Future<DateToday> response) {
+    public void handle(final RoutingContext ctx, final Future<DateToday> response) {
         var date = new SimpleDateFormat("yyyy-MM-dd").format(Calendar.getInstance().getTime());
         response.complete(new DateToday(date));
     }
@@ -122,10 +124,10 @@ Fields of a `TemplateModel` are generally converted to strings and then HTML-esc
 before being inserted into the HTML template. (The exception is if a field's type is itself `TemplateModel`,
 which causes that field to [itself be rendered as a template](#rendering-nested-html-templates).)
 
-A `TemplateModel` class should generally have a default HTML template, which can be specified either by including a field
-`public static final String _template` in the `TemplateModel` implementation itself, or by adding a `.html` file
-with the same name as the `TemplateModel` implementation, in the same package (`datetoday/DateToday.html` for the
-example above). 
+A `TemplateModel` class should generally have a default HTML template, which can be specified either by including
+a field `public static final String _template` in the `TemplateModel` implementation itself, or by adding a file
+with the extension `.html` and the same name as the `TemplateModel` implementation in the same package
+(i.e. `datetoday/DateToday.html` for the class `datetoday.DateToday`). 
 
 If the value of any field (e.g. `x`) is `null`, any use of the corresponding template parameter (e.g. `{{x}}`)
 will be replaced with the empty string (i.e. to not include a template parameter, set the corresponding field to
@@ -138,9 +140,9 @@ annotation:
 @Route(path = "/mobile/weatherforecast.html", requireLogin = false,
        // Override HTML template with mobile-friendly template for mobile route path:
        htmlTemplatePath = "/templates/mobile/weather.html")
-public class HelloWorld implements RouteHandler<Weather> {
+public class WeatherHandler implements RouteHandler<Weather> {
     @Override
-    public void handle(final RoutingContext event, final Future<Weather> response) {
+    public void handle(final RoutingContext ctx, final Future<Weather> response) {
         // Get weather asynchonously, then complete the response 
         WeatherForecast.getWeather(response);
     }
@@ -149,6 +151,24 @@ public class HelloWorld implements RouteHandler<Weather> {
 
 If a `TemplateModel` has no default HTML template, you will need to manually specify an `htmlTemplatePath`
 to use for each `Route`.
+
+#### Rendering complete HTML pages
+
+Note that all the HTML template examples given so far render only an HTML fragment, not a complete page.
+An HTML template can contain a complete HTML page, but usually all or most pages on a site need to use the
+same surrounding page content, and only the `<title>` and `<body>` elements need to change on a page-by-page
+basis.
+
+Consequently, if a `TemplateModel` implementation contains a field `public String _title`, after the `TemplateModel`
+has been rendered into an HTML fragment, the value of the `_title` field is inserted into the `{{_title}}` parameter
+of a *page template*, and the value of the rendered HTML fragment is inserted into the `{{_body}}` parameter of
+the page template.
+
+The [default page template](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/model/HTMLPageModel.html)
+is used unless it is overridden by specifying an override path of the form `htmlPageTemplatePath = "/page-template-override-path.html"`
+in the `Route` annotation of the route handler.
+
+The default page template includes [UIKit](https://getuikit.com/), [SennaJS](https://sennajs.com/), and [jQuery](https://jquery.com/). 
 
 #### Rendering nested HTML templates 
 
@@ -176,12 +196,12 @@ using `{{paramName template="/path/to/override-template.html"}}`, but this is no
 
 ### Custom handlers
 
-You can register a standard Vert.x `Handler<RoutingContext>` if you want to handle a route yourself, e.g. if you
-want to use your own HTML template engine to render content:
+You can register a standard Vert.x `Handler<RoutingContext>` rather than a `RouteHandler<T>` if you want to handle
+a route yourself, e.g. if you want to use your own HTML template engine to render content:
 
 ```java
 @Route(path = "/price.html", requireLogin = false)
-public class HelloWorld implements Handler<RoutingContext> {
+public class Price implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext ctx) {
         ctx.response().putHeader("content-type", "text/plain; charset=utf-8")
@@ -192,12 +212,14 @@ public class HelloWorld implements Handler<RoutingContext> {
 
 ### SockJS handlers
 
-You can register a standard Vert.x `Handler<SockJSSocket>` if you want to set up a SockJS connection.
+You can register a standard Vert.x `Handler<SockJSSocket>` rather than a `RouteHandler<T>` if you want to set up
+a SockJS connection.
+
 *(Note that this may work, but is not yet tested -- testing and pull requests are welcome.)*
 
 ```java
 @Route(path = "/socket", requireLogin = false)
-public class HelloWorld implements Handler<SockJSSocket> {
+public class SockJSHandler implements Handler<SockJSSocket> {
     @Override
     public void handle(SockJSSocket socket) {
         /* ... */
@@ -214,32 +236,51 @@ future (pull requests welcome).
 
 ## Authorization
 
-Role-based access control (RBAC) is supported on routes via the `permissions = { }` parameter of a `Route`
-annotation. Permissions are strings, and should be prefixed with something meaningful to avoid namespace
+Role-based access control (RBAC) is supported on routes via the `permissions = { }` list parameter of a `Route`
+annotation. Listing a permission also implicitly requires the user to be authenticated (logged in). 
+
+```java
+@Route(path = "/settings.html", permissions = { "role:manager" })
+public class Settings implements RouteHandler<SettingsModel> {
+    @Override
+    public void handle(RoutingContext ctx, Future<SettingsModel> settingsResponse) {
+        Settings.getSettings(ctx, settingsResponse);
+    }
+}
+```
+
+Permissions are strings, and should be prefixed with something meaningful to avoid namespace
 collisions, e.g. a prefix of `role:` could be used for roles. A user must have all listed permissions on a
-route before they have access to the route. The permissions are stored in the `permissions` collection of
+route before they have access to the route.
+
+The permissions are stored in the `permissions` collection of
 the MongoDB database, with the `_id` field of a record set to the email address of the user, and the
 `permissions` field of the same record set to a JSON object mapping from permission name to a Boolean value
 indicating whether the user has the permission. (If a user's email address is absent, or a user's email
 address is present but a named permission is absent, the user is assumed not to have the permission.)
 
-Some methods for adding or revoking a permission in the `permissions` table are contained in the `Permissions`
+Some methods for adding or revoking a permission in the `permissions` table are contained in the
+[`Permission`](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/utils/Permission.java)
 utility class.  
 
 ## Other `Route` configuration options
 
-The `Route` annotation supports many other configuration options -- check the Javadoc for details.
+The `Route` annotation supports many other configuration options --
+[check the Javadoc](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/route/Route.java) for details.
 
 ## Database access
 
-Serverx requires a running MongoDB instance. You can access this database using the static field `ServerxVerticle.mongoClient`.
-The database name and connection string are specified in the server configuration file. 
+Serverx requires a running MongoDB instance. You can access this database using the static field
+`ServerxVerticle.mongoClient`. MongoDB should be accessed in an asynchronous way, using callbacks.
+
+The database name and connection string are specified in the [server configuration file](#configuring-the-server). 
 
 ## Configuring the server
 
 You should add a file `server.properties` to the root of your project, containing the server configuration.
-The names of the properties in this file should match the fields of the `ServerProperties` class.
-If a value is specified in `server.properties`, it overrides the default value in the `ServerProperties` class.
+The names of the properties in this file should match the fields of the
+[`ServerProperties`](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/server/ServerProperties.java)
+class. If a value is specified in `server.properties`, it overrides the default value in the `ServerProperties` class.
 If a field in `ServerProperties` has a `null` value, the value has no default, and is required (the server won't
 start unless the property is set).
 

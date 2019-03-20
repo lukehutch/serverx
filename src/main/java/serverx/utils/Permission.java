@@ -8,11 +8,11 @@ import serverx.route.RouteInfo;
 import serverx.server.ServerxVerticle;
 
 /**
- * Permission.
+ * Permission utilities.
  */
 public class Permission {
     /**
-     * Grant or revoke.
+     * Grant or revoke a permission.
      *
      * @param ctx
      *            the ctx
@@ -21,7 +21,7 @@ public class Permission {
      * @param permission
      *            the permission
      * @param grant
-     *            the grant
+     *            whether to grant (true) or revoke (false)
      * @param future
      *            the future
      */
@@ -74,14 +74,14 @@ public class Permission {
     }
 
     /**
-     * Grant or revoke.
+     * Grant or revoke a permission.
      *
      * @param ctx
      *            the ctx
      * @param permission
      *            the permission
      * @param grant
-     *            the grant
+     *            whether to grant (true) or revoke (false)
      * @return the future
      */
     private static Future<?> grantOrRevoke(final RoutingContext ctx, final String permission, final boolean grant) {

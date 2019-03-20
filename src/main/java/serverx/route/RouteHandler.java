@@ -7,7 +7,7 @@ import io.vertx.ext.web.RoutingContext;
  * HTTP request handler.
  *
  * @param <T>
- *            the generic type
+ *            the type of the response object
  */
 public interface RouteHandler<T> {
     /**
@@ -18,5 +18,5 @@ public interface RouteHandler<T> {
      * @param response
      *            the response {@link Future}, which wraps the response object.
      */
-    public void handle(RoutingContext context, Future<T> response);
+    public void handle(RoutingContext context, Future<T> responseFuture);
 }
