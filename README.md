@@ -388,10 +388,11 @@ public class MyMainClass {
 }
 ```
 
-or 
+or the following (you will need the Serverx jar and [its dependencies](https://github.com/lukehutch/serverx/blob/master/pom.xml)
+on the classpath, as well as your project jar): 
 
 ```bash
-java -cp serverx.jar:myproject.jar io.vertx.core.Starter run serverx.server.ServerxVerticle
+java io.vertx.core.Starter run serverx.server.ServerxVerticle
 ```
 
 
