@@ -4,3 +4,5 @@ TODO items for Serverx
 - Support lists and arrays of nested TemplateModels
 - Allow for override template path to be specified inside template param, e.g. {{paramName template="/path/to/template.html"}}
 - Fix HTML indentation/prettyprinting (extra newlines are being inserted)
+- Support certificate change detection and dynamic certificate reload, for use with certbot
+- Add clean server shutdown method 
