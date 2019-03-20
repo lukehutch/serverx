@@ -389,7 +389,7 @@ java -cp serverx.jar:myproject.jar io.vertx.core.Starter run serverx.server.Serv
 
 ## Author
 
-ClassGraph was written by Luke Hutchison ([@LH](http://twitter.com/LH) on Twitter).
+Serverx was written by Luke Hutchison ([@LH](http://twitter.com/LH) on Twitter).
 
 Please donate if this library makes your life easier:
 
