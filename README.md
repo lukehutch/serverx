@@ -15,6 +15,7 @@ Serverx adopts a *secure by default* mindset:
 * SSL (and HTTP/2 + ALPN) is enabled by default, and `http://` requests automatically redirect to `https://` requests with the same path
 * routes require a user to be authenticated by default
 * cookies are HTTPS-only and disallowed for Javascript requests
+* CORS origin and allowed request methods can be configured
 * etc.
 
 Serverx also strives to be as fast and scalable as possible by building on the asynchronous multithreaded core of
