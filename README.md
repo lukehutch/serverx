@@ -117,7 +117,7 @@ package datetoday;
 
 import serverx.template.TemplateModel;
 
-public class DateToday extends TemplateModel {
+public class DateToday implements TemplateModel {
     public String date;
     public static final String _template = "<b>Today's date is:</b> {{date}}";
     
@@ -167,13 +167,13 @@ of type `TemplateModel`, they will be recursively rendered into HTML fragments, 
 template parameter position as normal.
 
 ```java
-public class OuterWidget extends TemplateModel {
+public class OuterWidget implements TemplateModel {
     public String name;
     public InnerWidget innerWidget;
     public static final String _template = "<b>{{name}}</b>: {{innerWidget}}";
 }
 
-public class InnerWidget extends TemplateModel {
+public class InnerWidget implements TemplateModel {
     public int count;
     public static final String _template = "current count: {{count}}";
 }
