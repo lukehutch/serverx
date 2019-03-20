@@ -235,11 +235,11 @@ an OAuth2 login page. Currently only Google OAuth2 is supported, but other login
 future (pull requests welcome).
 
 ```java
-@Route(path = "/secret.html")
-public class SecretPage implements RouteHandler<SecretPageModel> {
+@Route(path = "/profile.html")
+public class ProfileHandler implements RouteHandler<ProfileModel> {
     @Override
-    public void handle(RoutingContext ctx, Future<SecretPageModel> secretResponse) {
-        SecretStuff.getSecretResponse(ctx, secretResponse);
+    public void handle(RoutingContext ctx, Future<ProfileModel> response) {
+        Profile.getProfileModel(ctx, response);
     }
 }
 ```
