@@ -14,6 +14,8 @@ Serverx also strives to be as fast and scalable as possible by building on the a
 Vert.x, by using internal compilation and caching of HTML templates, by using `MethodHandle` to perform
 reflective access only at server startup time, etc. 
 
+Serverx is a new project, and works fine for the author's purposes, but has not yet been tested widely.
+
 ## Setting up routes
 
 When you start the Serverx server, it will scan the classes in your project (using [ClassGraph](https://github.com/classgraph/classgraph))
@@ -257,3 +259,23 @@ or
 java -cp serverx.jar:yourproject.jar io.vertx.core.Starter run serverx.server.ServerxVerticle
 ```
 
+
+## Author
+
+ClassGraph was written by Luke Hutchison ([@LH](http://twitter.com/LH) on Twitter).
+
+Please donate if this library makes your life easier:
+
+[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=luke.hutch@gmail.com&lc=US&item_name=Luke%20Hutchison&item_number=ClassGraph&no_note=0&currency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHostedGuest)
+
+## License
+
+**The MIT License (MIT)**
+
+**Copyright (c) 2019 Luke Hutchison**
+ 
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ 
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
