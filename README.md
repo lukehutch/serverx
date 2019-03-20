@@ -308,7 +308,7 @@ The `Route` annotation supports many other configuration options (e.g. changing 
 ## Database access
 
 Serverx requires a running MongoDB instance. You can access this database using the static field
-`ServerxVerticle.mongoClient`. MongoDB should be accessed in an asynchronous way, using callbacks.
+`ServerxVerticle.mongoClient`. MongoDB should be accessed asynchronously using callbacks.
 
 ```java
 @Route(path = "/settings.html", permissions = { "role:manager" })
