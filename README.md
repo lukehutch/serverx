@@ -308,7 +308,8 @@ public class SiteSettingsHandler implements RouteHandler<SiteSettingsModel> {
     @Override
     public void handle(RoutingContext ctx, Future<SiteSettingsModel> response) {
         ServerxVerticle.mongoClient.find(
-                "settings", new JsonObject().put("_id", "siteSettings"),
+                /* collection = */ "settings",
+                /* query = */ new JsonObject().put("_id", "siteSettings"),
                 result -> {
                     if (result.succeeded()) {
                         JsonObject settings = result.result().get(0);
