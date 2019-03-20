@@ -118,7 +118,7 @@ public class DateToday extends TemplateModel {
 ```
 
 Fields of a `TemplateModel` are generally converted to strings and then HTML-escaped 
-(using OWASP-compliant escaping, and using different escaping for HTML text and HTML attributes), 
+(using OWASP-compliant escaping, and using appropriate escaping for both text and HTML attributes), 
 before being inserted into the HTML template. (The exception is if a field's type is itself `TemplateModel`,
 which causes that field to [itself be rendered as a template](#rendering-nested-html-templates).)
 
