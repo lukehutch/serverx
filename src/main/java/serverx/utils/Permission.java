@@ -134,8 +134,7 @@ public class Permission {
     /**
      * Revoke the named permission from the named user. Will not update the session, since sessions are keyed by
      * session id rather than email address, so the user will need to log out and log back in for the changes to
-     * take effect, or wait for the session to time out and be renewed. This is a security risk since revocation is
-     * not immediate.
+     * take effect. This is a security risk, since revocation is not immediate.
      *
      * @param email
      *            the email
@@ -150,7 +149,7 @@ public class Permission {
     /**
      * Grant the named permission to the named user. Will not update the session, since sessions are keyed by
      * session id rather than email address, so the user will need to log out and log back in for the changes to
-     * take effect, or wait for the session to time out and be renewed.
+     * take effect.
      *
      * @param email
      *            the email
