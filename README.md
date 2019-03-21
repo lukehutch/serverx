@@ -3,10 +3,10 @@
 **Serverx** is a [Vert.x](https://vertx.io)-powered asynchronous multithreaded web server with simple annotation-based configuration of routes.
 
 Serverx strives to enable the setup of a web server with a *minimum amount of code*, by encapsulating a large amount
-of Vert.x boilerplate into a reusable library, and by allowing for flexible and simple access to a wide array of
-features of the `vertx-core` and `vertx-web` projects.
+of [Vert.x boilerplate](https://vertx.io/docs/vertx-web/java/) into a reusable library, and by allowing for flexible
+and simple access to a wide array of features of the `vertx-core` and `vertx-web` projects.
 
-Serverx adopts a *secure by default* mindset:
+Serverx is designed to be *secure by default*:
 
 * [all reasonable security headers](https://vertx.io/blog/writing-secure-vert-x-web-apps#security-headers) are enabled by default
 * the built-in template engine follows all OWASP guidelines for escaping parameters
@@ -15,12 +15,14 @@ Serverx adopts a *secure by default* mindset:
 * SSL (and HTTP/2 + ALPN) is enabled by default, and `http://` requests automatically redirect to `https://` requests with the same path
 * routes require a user to be authenticated by default
 * cookies are HTTPS-only and disallowed for Javascript requests
+* the static resource handler disables directory listing and access to hidden files/dirs
 * CORS origin and allowed request methods can be configured
-* etc.
 
-Serverx also strives to be as fast and scalable as possible by building on the asynchronous multithreaded core of
-Vert.x, by using internal compilation and caching of HTML templates, by using `MethodHandle` to perform
-reflective access only at server startup time, etc. 
+Serverx also strives to be as fast and scalable as possible by:
+
+* building on the asynchronous multithreaded core of Vert.x
+* using internal compilation and caching of HTML templates
+* using `MethodHandle` to perform required reflective access checks (for template models) at server startup time rather than at tempate rendering time
 
 Serverx is a new project, and is functional, but has not yet been tested widely.
 
@@ -367,7 +369,8 @@ templateModelPackage=com.mydomain.templatemodel
 # The MongoDB database name
 dbName=mydb
 
-# The file containing clientId and clientSecret properties for Google OAuth2
+# The file containing `clientId` and `clientSecret` properties for Google OAuth2
+# (a filesystem path, not a resource path)
 googleSecretProperties=/home/user/mydomain-config/google_secret.properties
 
 # The default page HTML template, if you want to override the default

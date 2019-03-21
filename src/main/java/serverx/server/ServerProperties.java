@@ -29,13 +29,14 @@ public class ServerProperties {
     public boolean useBoringSSL = true;
 
     /**
-     * The path to the SSL certificate. If unspecified, defaults to "/etc/letsencrypt/live/${host}/fullchain.pem".
+     * The path to the SSL certificate. This is a filesystem path, not a resource path. If unspecified, defaults to
+     * {@code "/etc/letsencrypt/live/{{host}}/fullchain.pem"}.
      */
     public String pemCertFilePath = "";
 
     /**
-     * The path to the SSL private key file. If unspecified, defaults to
-     * "/etc/letsencrypt/live/${host}/privkey.pem".
+     * The path to the SSL private key file. This is a filesystem path, not a resource path. If unspecified,
+     * defaults to {@code "/etc/letsencrypt/live/{{host}}/privkey.pem"}.
      */
     public String pemKeyFilePath = "";
 
@@ -54,8 +55,9 @@ public class ServerProperties {
     public String dbConnectionURI = "mongodb://localhost:27017";
 
     /**
-     * The path to the properties file containing Google secrets (required). <b>The properties file should not be in
-     * a git repository!</b> File should contain two properties: {@code clientId} and {@code clientSecret}.
+     * The path to the properties file containing Google secrets (required). This is a filesystem path, not a
+     * resource path. <b>The properties file should not be in a git repository!</b> File should contain two
+     * properties: {@code clientId} and {@code clientSecret}.
      */
     public String googleSecretProperties;
 
@@ -80,18 +82,21 @@ public class ServerProperties {
     /** The URL to redirect to if the user is not logged in and requests a resource that requires authentication. */
     public String loginRedirectURL = "/login";
 
-    /** The static resource root URL. */
+    /** The static resource root URL. Static resources will be served from this URL path. */
     public String staticResourceURL = "/static";
 
-    /** The static resource directory. */
+    /** The static resource directory. This is a filesystem path, not a resource path. */
     public String staticResourceDir = "webroot";
 
-    /** The uploads directory, used when {@link Route#requestBodySizeLimit()} > 0. */
+    /**
+     * The uploads directory, used when {@link Route#requestBodySizeLimit()} > 0. This is a filesystem path, not a
+     * resource path.
+     */
     public String uploadsDir = "uploads";
 
     /**
      * If set to the resource path for an HTML file, overrides the default page HTML template. The template should
-     * contain the parameters {@code _title} and {@code _body}.
+     * contain the parameters {@code _title} and {@code _body}. This is a filesystem path, not a resource path.
      */
     public String defaultPageHTMLTemplate = "";
 
@@ -105,12 +110,6 @@ public class ServerProperties {
      * If true, pretty print (indent) JSON. JSON serialization is faster (and response is smaller) if not indented.
      */
     public boolean indentJSON = false;
-
-    /**
-     * Default HTML page template to use. Should include template fields {@code _title} and {@code _body}. A basic
-     * template at {@code serverx/model/HTMLPageModel.html} is used by default.
-     */
-    public String defaultHTMLPageTemplate = "";
 
     /**
      * If true, allow non-public fields from {@link TemplateModel} objects to be named in HTML templates, and
