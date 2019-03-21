@@ -344,9 +344,9 @@ The database name and connection string are specified in the [server configurati
 You should add a file `server.properties` to the root of your project, containing the server configuration.
 The names of the properties in this file should match the fields of the
 [`ServerProperties`](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/server/ServerProperties.java)
-class. If a value is specified in `server.properties`, it overrides the default value in the `ServerProperties` class.
-If a field in `ServerProperties` has a `null` value, the value has no default, and is required (the server won't
-start unless the property is set).
+class, which is also where the default values can be found. If a value is specified in `server.properties`, it
+overrides the default value in the `ServerProperties` class. If a field in `ServerProperties` has no defined default value,
+then the property is required, i.e. the server won't start unless the property is set.
 
 A typical `server.properties` file will look like the following:
 
@@ -370,11 +370,11 @@ templateModelPackage=com.mydomain.templatemodel
 dbName=mydb
 
 # The file containing `clientId` and `clientSecret` properties for Google OAuth2
-# (a filesystem path, not a resource path)
+# (this is a filesystem path, not a resource path)
 googleSecretProperties=/home/user/mydomain-config/google_secret.properties
 
 # The default page HTML template, if you want to override the default
-# (a resource path, not a filesystem path)
+# (this is a resource path, not a filesystem path)
 defaultPageHTMLTemplate=/templates/page-template.html
 
 # Whether or not to indent (prettyprint) HTML and/or JSON in the response.
