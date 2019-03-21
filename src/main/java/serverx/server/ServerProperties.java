@@ -3,6 +3,7 @@ package serverx.server;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import serverx.route.Route;
+import serverx.route.RouteHandler;
 import serverx.template.TemplateModel;
 
 /** The configuration object. */
@@ -73,10 +74,13 @@ public class ServerProperties {
     /** The request timeout in milliseconds. */
     public int requestTimeout_ms = 10_000;
 
-    /** The package to scan for {@link Handler} classes with {@link Route} annotations (required). */
+    /**
+     * The name of the Java package to scan for {@link Handler} or {@link RouteHandler} classes that have
+     * {@link Route} annotations (required).
+     */
     public String handlerPackage;
 
-    /** The package to scan for {@link TemplateModel} subclasses (required). */
+    /** The name of the Java package to scan for classes that implement {@link TemplateModel} (required). */
     public String templateModelPackage;
 
     /** The URL to redirect to if the user is not logged in and requests a resource that requires authentication. */
