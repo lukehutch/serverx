@@ -239,7 +239,7 @@ a SockJS connection.
 *(Note that this may work, but is not yet tested -- testing and pull requests are welcome.)*
 
 ```java
-@Route(path = "/socket", requireLogin = false)
+@Route(path = "/socket")
 public class SockJSHandler implements Handler<SockJSSocket> {
     @Override
     public void handle(SockJSSocket socket) {
@@ -247,6 +247,9 @@ public class SockJSHandler implements Handler<SockJSSocket> {
     }
 }
 ```
+
+You probably should not use `requireLogin = false` with socket mountpoints (`/socket` in the above example),
+to reduce the likelihood of DoS attacks (i.e. only offer WebSocket connections to logged-in users).
 
 ## Authentication
 
