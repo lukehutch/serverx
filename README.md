@@ -34,8 +34,8 @@ to find route handlers, start a Vertx server, and automatically add the discover
 Route handlers should be annotated with
 [`serverx.route.Route`](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/route/Route.java),
 and should implement [`RouteHandler<T>`](https://github.com/lukehutch/serverx/blob/master/src/main/java/serverx/route/RouteHandler.java)
-for some "response object type" `T`. The second parameter of the `handle` method will have type `Future<T>`. The value that
-this `Future` is completed with will be referred to as the "response object". 
+for some *response object type* `T`. The second parameter of the `handle` method will have type `Future<T>`. The value that
+this `Future` is completed with will be referred to below as the *response object*. 
 
 ### Serving `text/plain` responses
 
@@ -52,13 +52,14 @@ public class HelloWorld implements RouteHandler<String> {
 
 ```
 
-If you do not specify a `path` parameter, the handler will match all request paths.
+Things to observe:
 
-Note that `requireLogin = true` is the default, for security purposes, so if you do not need the user to be
-[authenticated](#authentication), you need to specify `requireLogin = false`.
+* The `Future` is completed with an object of type `String`, which is also the parameter type of the `RouteHandler`.
+* If you do not specify a `path` parameter, the handler will match all request paths.
+* If you do not specify a `method` or `additionalMethods` parameter (e.g. `POST`), the handler will default to only handling `GET` requests. 
+* `requireLogin = true` requires the user to [authenticate](#authentication) to view the route. This is the default, for security reasons, so if you do not need the user to be authenticated, you need to specify `requireLogin = false`.
 
-If `responseType = ResponseType.STRING` is set in the annotation, the `toString()` method is called on the response object,
-so the response object type does not have to be String. For example, the following handler will respond with the text `[x, y, z]`: 
+If `responseType = ResponseType.STRING` is set in the annotation, then the `toString()` method is called on the response object. In other words, the response object type does not have to be `String`. For example, the following handler will respond with the text `[x, y, z]`, since that is the value returned by `List::toString` for the returned list: 
 
 ```java
 @Route(path = "/xyz", requireLogin = false, responseType = ResponseType.STRING)
@@ -232,6 +233,19 @@ public class Price implements Handler<RoutingContext> {
     }
 }
 ```
+
+### Failure handlers
+
+You can register a failure handler by adding `isFailureHandler = true` to the `Route` annotation. This handler will
+take over in the case of exceptions (with will give `ctx.statusCode()` equal to `5xx` or `-1`), page not found (`404`),
+etc.  You can filter for a single specific status code by adding `failureStatusCode = <statusCodeInt>` to the `Route`
+annotation.
+
+### Blocking handlers
+
+You can register a blocking handler by adding `isBlockingHandler = true` to the `Route` annotation. This handler will
+run in a separate thread pool from normal request handlers, and the handler is allowed to block. Blocking handlers
+should be used only sparingly.
 
 ### SockJS handlers
 
