@@ -2,7 +2,6 @@ package serverx.utils;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.Field;
 import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.Method;
@@ -18,9 +17,6 @@ import serverx.template.TemplateModel;
  * ReflectionUtils.
  */
 public class ReflectionUtils {
-    /** The Constant lookup. */
-    private static final Lookup lookup = MethodHandles.lookup();
-
     /**
      * Gets the field name to method handle.
      *
@@ -67,7 +63,7 @@ public class ReflectionUtils {
                 }
                 // Unreflect method
                 try {
-                    final var methodHandle = lookup.unreflect(m);
+                    final var methodHandle = MethodHandles.lookup().unreflect(m);
                     fieldNameToMethodHandle.put(propName, methodHandle);
                 } catch (final IllegalAccessException e) {
                     // Record that property could not be accessed
@@ -97,7 +93,7 @@ public class ReflectionUtils {
                 }
                 // Unreflect field
                 try {
-                    final var methodHandle = lookup.unreflectGetter(f);
+                    final var methodHandle = MethodHandles.lookup().unreflectGetter(f);
                     fieldNameToMethodHandle.put(f.getName(), methodHandle);
                     // Since field was found, remove reference to any failed getter
                     inaccessibleProperties.remove(fieldName);
