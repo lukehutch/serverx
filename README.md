@@ -420,10 +420,6 @@ java io.vertx.core.Starter run serverx.server.ServerxVerticle
 
 Serverx was written by Luke Hutchison ([@LH](http://twitter.com/LH) on Twitter).
 
-Please donate if this library makes your life easier:
-
-[![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=luke.hutch@gmail.com&lc=US&item_name=Luke%20Hutchison&item_number=ClassGraph&no_note=0&currency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHostedGuest)
-
 ## License
 
 **The MIT License (MIT)**
