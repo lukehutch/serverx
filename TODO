@@ -6,3 +6,6 @@ TODO items for Serverx
 - Fix HTML indentation/prettyprinting (extra newlines are being inserted)
 - Support certificate change detection and dynamic certificate reload, for use with certbot
 - Add clean server shutdown method 
+- Use Apache Commons Daemon and/or jsvc to daemonize and to be able to bind to low-numbered ports:
+  http://commons.apache.org/proper/commons-daemon/
+  http://commons.apache.org/proper/commons-daemon/jsvc.html
